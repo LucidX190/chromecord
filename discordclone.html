@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChromeCord</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        body::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera*/
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #4a5568; /* gray-600 */
+            border-radius: 4px;
+            border: 2px solid #2d3748; /* gray-800 */
+        }
+
+        /* Discord-like hover effect for server icons */
+        .server-icon-wrapper {
+            position: relative;
+        }
+        .server-icon-wrapper .tooltip {
+            visibility: hidden;
+            background-color: #1e293b; /* slate-800 */
+            color: #f8fafc; /* slate-50 */
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 10;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+        .server-icon-wrapper:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(-50%) translateX(15px);
+        }
+
+        /* Active server icon indicator */
+        .server-icon-active::before {
+            content: '';
+            position: absolute;
+            left: -8px; /* Adjust to show outside the circle */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 80%; /* Almost full height */
+            background-color: #3b82f6; /* blue-500 */
+            border-radius: 0 4px 4px 0;
+        }
+
+        .server-icon-active .server-icon {
+            border-radius: 12px; /* Slightly rounded square for active state */
+        }
+
+        /* DM icon specific styling */
+        .dm-icon {
+            background-color: #374151; /* gray-700 */
+            color: #d1d5db; /* gray-300 */
+        }
+        .dm-icon:hover {
+            background-color: #4b5563; /* gray-600 */
+        }
+
+        /* Server icon default background and text */
+        .server-icon {
+            background-color: #374151; /* gray-700 */
+            color: #d1d5db; /* gray-300 */
+            transition: border-radius 0.2s ease, background-color 0.2s ease;
+        }
+        .server-icon:hover {
+            border-radius: 12px; /* Square on hover */
+            background-color: #3b82f6; /* blue-500 */
+        }
+
+        /* Channel List Styling */
+        .channel-item {
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .channel-item:hover {
+            background-color: #4a5568; /* gray-600 */
+        }
+        .channel-item.active {
+            background-color: #3b82f6; /* blue-600 */
+            color: white;
+            font-weight: 600;
+        }
+
+        /* NEW LOGO STYLES (from chromecord-new-abstract-logo) */
+        .abstract-logo-icon-small {
+            width: 50px; /* Smaller size for integration */
+            height: 50px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 0.5rem; /* Space below icon */
+        }
+
+        .abstract-logo-icon-small .outer-ring {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                #4285f4 0% 25%,   /* Blue */
+                #34a853 25% 50%,   /* Green */
+                #fbbc05 50% 75%,   /* Yellow */
+                #ea4335 75% 100%   /* Red */
+            );
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.1));
+        }
+
+        .abstract-logo-icon-small .inner-circle {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            border-radius: 50%;
+            background-color: white;
+            border: 3px solid #1a202c; /* Dark border matching body for separation */
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .abstract-logo-icon-small .chat-icon-central {
+            width: 70%;
+            height: 70%;
+            color: #3b82f6;
+            filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.3));
+        }
+
+        .logo-text-small {
+            font-size: 1.5rem; /* Smaller font for integration */
+            font-weight: 700;
+            color: #cbd5e0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+        }
+        .logo-text-small span {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col">
+
+    <!-- Auth Section (Login/Signup) -->
+    <div id="auth-section" class="fixed inset-0 bg-gray-900 bg-opacity-95 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
+            <!-- Integrated Logo for Auth Section -->
+            <div class="flex flex-col items-center mb-6">
+                <div class="abstract-logo-icon-small">
+                    <div class="outer-ring"></div>
+                    <div class="inner-circle">
+                        <svg class="chat-icon-central" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H2a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2zM10 7a1 1 0 100 2h4a1 1 0 100-2h-4zm-4 4a1 1 0 100 2h4a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold text-center text-blue-400">Welcome to ChromeCord</h2>
+            </div>
+            <!-- End Integrated Logo -->
+
+            <div class="mb-4">
+                <label for="auth-username" class="block text-gray-300 text-sm font-semibold mb-2">Username</label>
+                <input type="text" id="auth-username" placeholder="Choose your username"
+                    class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-6">
+                <label for="auth-password" class="block text-gray-300 text-sm font-semibold mb-2">Password</label>
+                <input type="password" id="auth-password" placeholder="Your password"
+                    class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <p id="auth-error-message" class="text-red-400 text-sm mb-4 hidden"></p>
+            <p class="text-yellow-400 text-xs text-center mb-4">Note: Password reset via email is not available with username-only accounts.</p>
+
+
+            <div class="flex flex-col space-y-3">
+                <button id="signup-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    Sign Up
+                </button>
+                <button id="login-btn"
+                    class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    Login
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Layout -->
+    <div id="main-app-container" class="flex flex-1 overflow-hidden hidden">
+
+        <!-- Server Icon Sidebar (Discord-like vertical strip) -->
+        <div id="server-icon-sidebar" class="w-20 bg-gray-900 flex flex-col items-center py-3 space-y-3 custom-scrollbar">
+            <!-- App Logo at the top of the sidebar -->
+            <div class="abstract-logo-icon-small w-14 h-14"> <!-- Smaller for sidebar -->
+                <div class="outer-ring"></div>
+                <div class="inner-circle">
+                    <svg class="chat-icon-central" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H2a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2zM10 7a1 1 0 100 2h4a1 1 0 100-2h-4zm-4 4a1 1 0 100 2h4a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="w-10 h-0.5 bg-gray-700 rounded-full"></div> <!-- Separator -->
+
+            <!-- DM Icon -->
+            <div id="dm-icon-wrapper" class="server-icon-wrapper relative w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 cursor-pointer hover:rounded-xl transition-all duration-200 ease-in-out group">
+                <i class="fas fa-comment-dots text-white text-xl"></i>
+                <span class="tooltip">Direct Messages</span>
+            </div>
+            <div class="w-10 h-0.5 bg-gray-700 rounded-full"></div> <!-- Separator -->
+
+            <!-- Server Icons List -->
+            <div id="servers-icon-list" class="flex flex-col items-center space-y-3 flex-1 overflow-y-auto custom-scrollbar w-full">
+                <!-- Server icons will be injected here -->
+            </div>
+
+            <!-- Add Server (+) Icon -->
+            <div id="add-server-icon" class="server-icon-wrapper relative w-12 h-12 flex items-center justify-center rounded-full bg-gray-700 cursor-pointer hover:rounded-xl hover:bg-green-600 transition-all duration-300 ease-in-out group">
+                <i class="fas fa-plus text-white text-xl"></i>
+                <span class="tooltip">Add a Server</span>
+            </div>
+        </div>
+
+        <!-- Left Panel (Friends List / Server Channels / Server Settings) -->
+        <div id="left-panel" class="w-64 bg-gray-800 flex flex-col p-4 shadow-lg hidden">
+            <!-- Header for Panel (e.g., "Direct Messages" or Server Name) -->
+            <h2 id="left-panel-header" class="text-2xl font-bold text-blue-400 mb-4"></h2>
+
+            <!-- Content Area for Left Panel - controlled by JS -->
+            <div id="left-panel-content" class="flex-1 overflow-y-auto custom-scrollbar">
+                <!-- Content injected here (e.g., Friends list, Server channels list, Settings navigation) -->
+            </div>
+
+            <!-- User Info and Logout (at bottom of left panel) -->
+            <div class="mt-auto pt-4 border-t border-gray-700">
+                <div id="user-info" class="text-sm text-gray-400">
+                    <p>Logged in as: <span id="display-user-name" class="font-semibold text-gray-200"></span></p>
+                    <p>UID: <span id="display-user-id" class="text-xs"></span></p>
+                    <button id="edit-name-btn" class="text-blue-400 hover:text-blue-300 text-xs mt-1">Edit Username</button>
+                </div>
+                <button id="logout-btn"
+                    class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Panel (Chat Area / DM Chat / Server Settings View) -->
+        <div id="main-content-panel" class="flex-1 flex flex-col bg-gray-900 p-4 shadow-lg hidden">
+            <!-- Header for Main Content (e.g., Channel Name, Friend Name, Settings Title) -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-700 mb-4">
+                <h1 id="main-content-header" class="text-2xl font-bold text-gray-50">Select a Server or DM</h1>
+                <div id="server-settings-button-wrapper" class="hidden">
+                    <button id="open-server-settings-btn"
+                        class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area for Main Panel - controlled by JS -->
+            <div id="dynamic-content-area" class="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+                <!-- Initial placeholder content -->
+                <div id="default-welcome-message" class="text-center text-gray-400 mt-20">
+                    <p class="text-lg mb-4">Welcome to ChromeCord!</p>
+                    <p>Select a server or direct message to start chatting.</p>
+                </div>
+
+                <!-- Chat/DM Content (hidden by default) -->
+                <div id="chat-content" class="flex-1 flex flex-col hidden">
+                    <div id="messages-list" class="flex-1 overflow-y-auto pr-2 mb-4 custom-scrollbar">
+                        <!-- Messages will be injected here -->
+                    </div>
+                    <form id="message-form" class="flex mt-auto">
+                        <input type="text" id="message-input" placeholder="Type your message..."
+                            class="flex-1 p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-r-md shadow-md transition duration-300 ease-in-out">
+                            Send
+                        </button>
+                    </form>
+                    <p id="message-send-error" class="text-red-400 text-sm mt-2 hidden"></p>
+                </div>
+
+                <!-- Server Settings Content (hidden by default) -->
+                <div id="server-settings-content" class="p-4 hidden">
+                    <h3 class="text-xl font-bold text-gray-50 mb-4">Server Settings</h3>
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-md mb-4">
+                        <p class="text-gray-300 mb-2">Server Name: <span id="settings-server-name" class="font-semibold text-gray-100"></span></p>
+                        <p class="text-gray-300 mb-2">Server ID: <span id="settings-server-id" class="font-semibold text-gray-100"></span></p>
+                        <p class="text-gray-300 mb-2">Created By: <span id="settings-created-by" class="font-semibold text-gray-100"></span></p>
+
+                        <!-- Admin Management -->
+                        <h4 class="text-lg font-semibold text-gray-200 mt-4 mb-2">Admins</h4>
+                        <ul id="settings-admin-list" class="list-disc list-inside text-gray-400 ml-4 mb-4 max-h-32 overflow-y-auto custom-scrollbar">
+                            <!-- Admins will be injected here -->
+                        </ul>
+                        <div id="admin-management-controls" class="flex flex-col space-y-2">
+                            <input type="text" id="add-admin-username-input" placeholder="Add admin by username"
+                                class="w-full p-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button id="add-admin-btn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                                Add Admin
+                            </button>
+                            <p id="admin-message" class="text-red-400 text-sm hidden"></p>
+                        </div>
+
+                        <!-- Channel Management -->
+                        <h4 class="text-lg font-semibold text-gray-200 mt-6 mb-2">Channels</h4>
+                        <ul id="settings-channel-list" class="list-disc list-inside text-gray-400 ml-4 mb-4 max-h-32 overflow-y-auto custom-scrollbar">
+                            <!-- Channels will be injected here -->
+                        </ul>
+                        <div id="channel-management-controls" class="flex flex-col space-y-2">
+                            <input type="text" id="new-channel-name-input" placeholder="New Channel Name (e.g., #general)"
+                                class="w-full p-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button id="add-channel-btn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                                Add Channel
+                            </button>
+                            <p id="channel-message" class="text-red-400 text-sm hidden"></p>
+                        </div>
+                    </div>
+                    <button id="leave-server-btn"
+                        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                        Leave Server
+                    </button>
+                    <button id="delete-server-btn"
+                        class="bg-red-800 hover:bg-red-900 text-white font-semibold py-2 px-4 rounded-md shadow-md ml-2 transition duration-300 ease-in-out">
+                        Delete Server
+                    </button>
+                </div>
+
+                <!-- DM List Content (hidden by default, shown in left-panel-content) -->
+                <div id="dm-list-content-template" class="hidden">
+                    <div id="dm-conversations-list" class="flex flex-col space-y-2">
+                        <!-- DM items will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Friends List (hidden by default, shown in left-panel-content when DM active) -->
+                <div id="friends-list-content-template" class="hidden">
+                    <h3 class="text-xl font-bold text-gray-50 mb-2">Friends</h3>
+                    <div id="friends-list" class="flex flex-col space-y-2 mb-4">
+                        <!-- Friends will be injected here -->
+                    </div>
+                    <input type="text" id="add-friend-username-input" placeholder="Add friend by username"
+                        class="w-full p-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2">
+                    <button id="send-friend-request-btn"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                        Send Friend Request
+                    </button>
+                    <p id="friend-request-message" class="text-red-400 text-sm mt-2 hidden"></p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Custom Modal for User Name Input -->
+    <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-96">
+            <h3 class="text-xl font-bold text-gray-50 mb-4">Edit Your Username</h3>
+            <input type="text" id="name-input-field" placeholder="Enter your new unique username"
+                class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+            <p id="username-error-message" class="text-red-400 text-sm mb-4 hidden"></p>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-name-btn"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md">Cancel</button>
+                <button id="save-name-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Management Modal (for + icon) -->
+    <div id="server-management-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-2xl font-bold text-gray-50 mb-6 text-center">Server Options</h3>
+
+            <div class="flex flex-col space-y-4">
+                <button id="open-create-server-form-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    <i class="fas fa-plus-circle mr-2"></i> Create New Server
+                </button>
+                <button id="open-join-server-form-btn"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Join an Existing Server
+                </button>
+                <button id="close-server-management-modal-btn"
+                    class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    Cancel
+                </button>
+            </div>
+
+            <!-- Create Server Form (initially hidden) -->
+            <div id="create-server-form" class="mt-8 pt-6 border-t border-gray-700 hidden">
+                <h4 class="text-xl font-bold text-gray-50 mb-4">Create New Server</h4>
+                <input type="text" id="new-server-id-input" placeholder="Server ID (Join Code)"
+                    class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3">
+                <input type="text" id="new-server-name-input" placeholder="Server Name"
+                    class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+                <button id="create-server-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    Create Server
+                </button>
+                <p id="create-server-message" class="text-red-400 text-sm mt-2 hidden"></p>
+            </div>
+
+            <!-- Join Server Form (initially hidden) -->
+            <div id="join-server-form" class="mt-8 pt-6 border-t border-gray-700 hidden">
+                <h4 class="text-xl font-bold text-gray-50 mb-4">Join Server</h4>
+                <input type="text" id="join-server-id-input" placeholder="Server ID (Join Code)"
+                    class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+                <button id="join-server-btn"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                    Join Server
+                </button>
+                <p id="join-server-message" class="text-red-400 text-sm mt-2 hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Channel Settings Modal -->
+    <div id="channel-settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-2xl font-bold text-gray-50 mb-6 text-center">Channel Settings</h3>
+
+            <div class="mb-4">
+                <label for="edit-channel-name-input" class="block text-gray-300 text-sm font-semibold mb-2">Channel Name</label>
+                <input type="text" id="edit-channel-name-input"
+                    class="w-full p-3 bg-gray-700 text-gray-100 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-300 text-sm font-semibold mb-2">Talk Permissions</label>
+                <div class="flex items-center">
+                    <input type="checkbox" id="can-talk-everyone-checkbox" class="h-5 w-5 text-blue-600 rounded-md focus:ring-blue-500">
+                    <label for="can-talk-everyone-checkbox" class="ml-2 text-gray-300">Everyone can talk in this channel</label>
+                </div>
+            </div>
+
+            <p id="channel-settings-message" class="text-red-400 text-sm mb-4 hidden"></p>
+
+            <div class="flex justify-end space-x-3">
+                <button id="delete-channel-btn"
+                    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                    Delete Channel
+                </button>
+                <button id="cancel-channel-settings-btn"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md">Cancel</button>
+                <button id="save-channel-settings-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal (New!) -->
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <p id="custom-confirm-message" class="text-gray-100 text-lg mb-6 text-center"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="custom-confirm-cancel-btn"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                    Cancel
+                </button>
+                <button id="custom-confirm-ok-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Firebase Core & Auth
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+        // Firebase Firestore
+        import {
+            getFirestore,
+            collection,
+            query,
+            where,
+            orderBy,
+            onSnapshot,
+            addDoc,
+            serverTimestamp,
+            doc,
+            getDoc,
+            setDoc,
+            updateDoc,
+            arrayUnion,
+            arrayRemove,
+            deleteDoc,
+            getDocs
+        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration - Directly embedded as requested
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHsOYFezDh-sLep6wumM-bM_RyZ4hbzv4",
+            authDomain: "disclone-321cc.firebaseapp.com",
+            projectId: "disclone-321cc",
+            storageBucket: "disclone-321cc.appspot.com",
+            messagingSenderId: "1058888233805",
+            appId: "1:1058888233805:web:d4909b3964f03a3f03fd04",
+            measurementId: "G-0SWRH7G9NH"
+        };
+        // Define appId from the provided config
+        const appId = firebaseConfig.appId;
+
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app); // Firestore initialization
+        const auth = getAuth(app); // Auth initialization
+
+
+        const APP_DOMAIN = 'Chromecord.fake'; // Domain for dummy emails
+
+        let currentUser = null; // Stores the authenticated user object
+        let currentUserId = null; // Stores the user's unique ID
+        let currentUsername = 'Guest'; // Stores the user's display username (distinct from email)
+        let selectedServer = null; // Stores the currently selected server object
+        let selectedChannel = null; // Stores the currently selected channel object
+        let selectedDM = null; // Stores the currently selected DM user/conversation
+        let currentView = 'welcome'; // 'welcome', 'dm-list', 'server-chat', 'server-settings', 'dm-chat'
+
+        let unsubscribeMessages = null; // Function to unsubscribe from message listener
+        let unsubscribeServers = null; // Function to unsubscribe from servers listener
+        let unsubscribeChannels = null; // Function to unsubscribe from channels listener
+        let unsubscribeFriends = null; // Function to unsubscribe from friends listener
+        let unsubscribeDMs = null; // Function to unsubscribe from DM list listener
+
+        // --- DOM Elements ---
+        const authSection = document.getElementById('auth-section');
+        const authUsernameInput = document.getElementById('auth-username');
+        const authPasswordInput = document.getElementById('auth-password');
+        const authErrorMessage = document.getElementById('auth-error-message');
+        const signupBtn = document.getElementById('signup-btn');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const mainAppContainer = document.getElementById('main-app-container');
+        const serverIconSidebar = document.getElementById('server-icon-sidebar');
+        const dmIconWrapper = document.getElementById('dm-icon-wrapper');
+        const serversIconList = document.getElementById('servers-icon-list');
+        const addServerIcon = document.getElementById('add-server-icon');
+
+        const leftPanel = document.getElementById('left-panel');
+        const leftPanelHeader = document.getElementById('left-panel-header');
+        const leftPanelContent = document.getElementById('left-panel-content');
+
+        const mainContentPanel = document.getElementById('main-content-panel');
+        const mainContentHeader = document.getElementById('main-content-header');
+        const defaultWelcomeMessage = document.getElementById('default-welcome-message');
+        const chatContent = document.getElementById('chat-content');
+        const messagesListEl = document.getElementById('messages-list');
+        const messageInput = document.getElementById('message-input');
+        const messageForm = document.getElementById('message-form');
+        const messageSendError = document.getElementById('message-send-error');
+
+
+        const displayUserIdEl = document.getElementById('display-user-id');
+        const displayUserNameEl = document.getElementById('display-user-name');
+        const editNameBtn = document.getElementById('edit-name-btn');
+
+        const nameModal = document.getElementById('name-modal');
+        const nameInputField = document.getElementById('name-input-field');
+        const usernameErrorMessage = document.getElementById('username-error-message');
+        const cancelNameBtn = document.getElementById('cancel-name-btn');
+        const saveNameBtn = document.getElementById('save-name-btn');
+
+        const serverManagementModal = document.getElementById('server-management-modal');
+        const openCreateServerFormBtn = document.getElementById('open-create-server-form-btn');
+        const openJoinServerFormBtn = document.getElementById('open-join-server-form-btn');
+        const closeServerManagementModalBtn = document.getElementById('close-server-management-modal-btn');
+        const createServerForm = document.getElementById('create-server-form');
+        const newServerIdInput = document.getElementById('new-server-id-input');
+        const newServerNameInput = document.getElementById('new-server-name-input');
+        // CORRECTED ID: From 'createServer-btn' to 'create-server-btn'
+        const createServerBtn = document.getElementById('create-server-btn');
+        const createServerMessage = document.getElementById('create-server-message');
+        const joinServerForm = document.getElementById('join-server-form');
+        const joinServerIdInput = document.getElementById('join-server-id-input');
+        const joinServerBtn = document.getElementById('join-server-btn');
+        const joinServerMessage = document.getElementById('join-server-message');
+
+        const serverSettingsButtonWrapper = document.getElementById('server-settings-button-wrapper');
+        const openServerSettingsBtn = document.getElementById('open-server-settings-btn');
+        const serverSettingsContent = document.getElementById('server-settings-content');
+        const settingsServerName = document.getElementById('settings-server-name');
+        const settingsServerId = document.getElementById('settings-server-id');
+        const settingsCreatedBy = document.getElementById('settings-created-by');
+        const settingsMemberList = document.getElementById('settings-member-list');
+        const settingsMemberCount = document.getElementById('settings-member-count');
+        const leaveServerBtn = document.getElementById('leave-server-btn');
+        const deleteServerBtn = document.getElementById('delete-server-btn');
+
+        const settingsAdminList = document.getElementById('settings-admin-list');
+        const addAdminUsernameInput = document.getElementById('add-admin-username-input');
+        const addAdminBtn = document.getElementById('add-admin-btn');
+        const adminMessage = document.getElementById('admin-message');
+
+        const settingsChannelList = document.getElementById('settings-channel-list');
+        const newChannelNameInput = document.getElementById('new-channel-name-input');
+        const addChannelBtn = document.getElementById('add-channel-btn');
+        const channelMessage = document.getElementById('channel-message');
+
+        const dmListContentTemplate = document.getElementById('dm-list-content-template');
+        const dmConversationsList = document.getElementById('dm-conversations-list');
+
+        const friendsListContentTemplate = document.getElementById('friends-list-content-template');
+        const friendsListEl = document.getElementById('friends-list');
+        const addFriendUsernameInput = document.getElementById('add-friend-username-input');
+        const sendFriendRequestBtn = document.getElementById('send-friend-request-btn');
+        const friendRequestMessage = document.getElementById('friend-request-message');
+
+        const channelSettingsModal = document.getElementById('channel-settings-modal');
+        const editChannelNameInput = document.getElementById('edit-channel-name-input');
+        const canTalkEveryoneCheckbox = document.getElementById('can-talk-everyone-checkbox');
+        const channelSettingsMessage = document.getElementById('channel-settings-message');
+        const deleteChannelBtn = document.getElementById('delete-channel-btn');
+        const cancelChannelSettingsBtn = document.getElementById('cancel-channel-settings-btn');
+        const saveChannelSettingsBtn = document.getElementById('save-channel-settings-btn');
+
+        // Custom Confirm Modal elements
+        const customConfirmModal = document.getElementById('custom-confirm-modal');
+        const customConfirmMessage = document.getElementById('custom-confirm-message');
+        const customConfirmOkBtn = document.getElementById('custom-confirm-ok-btn');
+        const customConfirmCancelBtn = document.getElementById('custom-confirm-cancel-btn');
+
+
+        let editingChannelId = null; // To store the ID of the channel being edited
+
+        // --- Diagnostic Logs for DOM Elements (Improved to show null if not found) ---
+        console.log("--- DOM element check at script load ---");
+        console.log("settingsServerName:", settingsServerName);
+        console.log("settingsServerId:", settingsServerId);
+        console.log("settingsCreatedBy:", settingsCreatedBy);
+        console.log("serverSettingsContent:", serverSettingsContent);
+        console.log("createServerBtn:", createServerBtn); // Add this for direct check
+        console.log("----------------------------------------");
+
+
+        // --- Utility Functions ---
+
+        // Scrolls the messages list to the bottom
+        function scrollToBottom() {
+            if (messagesListEl) { // Add null check
+                messagesListEl.scrollTop = messagesListEl.scrollHeight;
+            }
+        }
+
+        // Formats a Firestore Timestamp object into a readable string
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate();
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Display a temporary message for various actions
+        function showMessage(element, message, isError = false) {
+            if (!element) {
+                console.error("Attempted to show message on a null element:", message);
+                return;
+            }
+            element.textContent = message;
+            element.classList.remove('hidden', 'text-red-400', 'text-green-400');
+            if (isError) {
+                element.classList.add('text-red-400');
+                // For errors, don't hide automatically, let user dismiss or new action replace it
+            } else {
+                element.classList.add('text-green-400');
+                setTimeout(() => {
+                    element.classList.add('hidden');
+                }, 3000); // Hide after 3 seconds for success messages
+            }
+        }
+
+        // Custom Confirmation Modal Function
+        function showCustomConfirm(message, onConfirm, onCancel = null) {
+            if (!customConfirmModal || !customConfirmMessage || !customConfirmOkBtn || !customConfirmCancelBtn) {
+                console.error("Custom confirm modal elements not found. Falling back to native confirm.");
+                // Fallback to native confirm if modal elements are missing
+                if (confirm(message)) {
+                    if (onConfirm) onConfirm();
+                } else {
+                    if (onCancel) onCancel();
+                }
+                return;
+            }
+
+            customConfirmMessage.textContent = message;
+            customConfirmModal.classList.remove('hidden');
+
+            const handleConfirm = () => {
+                customConfirmModal.classList.add('hidden');
+                customConfirmOkBtn.removeEventListener('click', handleConfirm);
+                customConfirmCancelBtn.removeEventListener('click', handleCancel);
+                if (onConfirm) onConfirm();
+            };
+
+            const handleCancel = () => {
+                customConfirmModal.classList.add('hidden');
+                customConfirmOkBtn.removeEventListener('click', handleConfirm);
+                customConfirmCancelBtn.removeEventListener('click', handleCancel);
+                if (onCancel) onCancel();
+            };
+
+            customConfirmOkBtn.addEventListener('click', handleConfirm);
+            customConfirmCancelBtn.addEventListener('click', handleCancel);
+        }
+
+
+        // Generates a simple, unique icon text for a server (first 2 letters)
+        function generateServerIconText(serverName) {
+            if (!serverName) return '?';
+            return serverName.substring(0, 2).toUpperCase();
+        }
+
+        // Helper to get a consistent DM conversation ID
+        function getDmConversationId(userId1, userId2) {
+            return [userId1, userId2].sort().join('_');
+        }
+
+        // Checks if current user is owner of selected server
+        function isOwner() {
+            // Ensure selectedServer and currentUserId are not null
+            if (!selectedServer || !currentUserId) {
+                console.warn("isOwner: selectedServer or currentUserId is null/undefined.");
+                return false;
+            }
+            return selectedServer.ownerId === currentUserId;
+        }
+
+        // Checks if current user is admin of selected server
+        function isAdmin() {
+            return selectedServer && selectedServer.admins && selectedServer.admins.includes(currentUserId);
+        }
+
+        // Checks if current user has management permissions (owner or admin)
+        function hasManagementPermissions() {
+            return isOwner() || isAdmin();
+        }
+
+
+        // --- UI View Management ---
+
+        function hideAllMainContent() {
+            if (defaultWelcomeMessage) defaultWelcomeMessage.classList.add('hidden');
+            if (chatContent) chatContent.classList.add('hidden');
+            if (serverSettingsContent) serverSettingsContent.classList.add('hidden');
+            if (serverSettingsButtonWrapper) serverSettingsButtonWrapper.classList.add('hidden');
+        }
+
+        function clearLeftPanelContent() {
+            if (leftPanelContent) leftPanelContent.innerHTML = '';
+        }
+
+        function activateServerIcon(elementId) {
+            document.querySelectorAll('.server-icon-wrapper').forEach(el => {
+                el.classList.remove('server-icon-active');
+                if (el.querySelector('.server-icon')) {
+                    el.querySelector('.server-icon').classList.remove('rounded-xl'); // Reset hover state for inactive
+                    el.querySelector('.server-icon').classList.add('rounded-full');
+                }
+            });
+            const activeIcon = document.getElementById(elementId);
+            if (activeIcon) {
+                activeIcon.classList.add('server-icon-active');
+                if (activeIcon.querySelector('.server-icon')) {
+                    activeIcon.querySelector('.server-icon').classList.add('rounded-xl'); // Force square for active
+                    activeIcon.querySelector('.server-icon').classList.remove('rounded-full');
+                }
+            }
+        }
+
+        async function showDmListView() {
+            currentView = 'dm-list';
+            selectedServer = null; // Clear selected server
+            selectedChannel = null; // Clear selected channel
+            selectedDM = null; // Clear selected DM
+
+            // Unsubscribe from server-related listeners
+            if (unsubscribeChannels) unsubscribeChannels();
+            unsubscribeChannels = null;
+            if (unsubscribeMessages) unsubscribeMessages();
+            unsubscribeMessages = null;
+
+            if (leftPanel) leftPanel.classList.remove('hidden');
+            if (mainContentPanel) mainContentPanel.classList.remove('hidden');
+            hideAllMainContent();
+            clearLeftPanelContent();
+
+            if (leftPanelHeader) leftPanelHeader.textContent = 'Direct Messages';
+            if (mainContentHeader) mainContentHeader.textContent = 'Select a friend to DM';
+            if (defaultWelcomeMessage) defaultWelcomeMessage.classList.remove('hidden'); // Show welcome message initially
+
+            // Clone friends list content into left panel
+            const friendsContent = friendsListContentTemplate.cloneNode(true);
+            if (friendsContent) { // Add null check
+                friendsContent.id = 'active-friends-list-content';
+                friendsContent.classList.remove('hidden');
+                if (leftPanelContent) leftPanelContent.appendChild(friendsContent);
+            }
+
+
+            const activeFriendsListEl = friendsContent ? friendsContent.querySelector('#friends-list') : null;
+            const activeAddFriendUsernameInput = friendsContent ? friendsContent.querySelector('#add-friend-username-input') : null;
+            const activeSendFriendRequestBtn = friendsContent ? friendsContent.querySelector('#send-friend-request-btn') : null;
+            const activeFriendRequestMessage = friendsContent ? friendsContent.querySelector('#friend-request-message') : null;
+
+            if (activeSendFriendRequestBtn) { // Add null check
+                activeSendFriendRequestBtn.onclick = async () => {
+                    const targetUsername = activeAddFriendUsernameInput.value.trim();
+                    if (activeFriendRequestMessage) activeFriendRequestMessage.classList.add('hidden');
+                    if (!targetUsername || !currentUserId || targetUsername === currentUsername) {
+                        showMessage(activeFriendRequestMessage, 'Invalid username or cannot send request to self.', true);
+                        return;
+                    }
+                    try {
+                        const usersRef = collection(db, 'users');
+                        const q = query(usersRef, where('username', '==', targetUsername));
+                        const querySnapshot = await getDocs(q);
+                        if (querySnapshot.empty) {
+                            showMessage(activeFriendRequestMessage, `User '${targetUsername}' not found.`, true);
+                            return;
+                        }
+                        const targetUserDoc = querySnapshot.docs[0];
+                        const targetUserId = targetUserDoc.id;
+
+                        const currentUserDocSnap = await getDoc(doc(db, 'users', currentUserId));
+                        if (currentUserDocSnap.exists() && currentUserDocSnap.data().friends && currentUserDocSnap.data().friends.includes(targetUserId)) {
+                            showMessage(activeFriendRequestMessage, `${targetUsername} is already your friend.`, false);
+                            if (activeAddFriendUsernameInput) activeAddFriendUsernameInput.value = '';
+                            return;
+                        }
+                        const existingRequestQuery = query(
+                            collection(db, 'users', targetUserId, 'friendRequests'),
+                            where('senderId', '==', currentUserId),
+                            where('status', '==', 'pending')
+                        );
+                        const existingRequestSnap = await getDocs(existingRequestQuery);
+                        if (!existingRequestSnap.empty) {
+                            showMessage(activeFriendRequestMessage, `A pending request to ${targetUsername} already exists.`, false);
+                            if (activeAddFriendUsernameInput) activeAddFriendUsernameInput.value = '';
+                            return;
+                        }
+                        await addDoc(collection(db, 'users', targetUserId, 'friendRequests'), {
+                            senderId: currentUserId,
+                            senderUsername: currentUsername,
+                            status: 'pending',
+                            createdAt: serverTimestamp()
+                        });
+                        showMessage(activeFriendRequestMessage, `Friend request sent to ${targetUsername}!`, false);
+                        if (activeAddFriendUsernameInput) activeAddFriendUsernameInput.value = '';
+                    } catch (error) {
+                        console.error("Error sending friend request:", error);
+                        showMessage(activeFriendRequestMessage, 'Failed to send request. Check console.', true);
+                    }
+                };
+            }
+
+
+            if (leftPanelContent) { // Add null check
+                leftPanelContent.addEventListener('click', async (event) => { // Use delegation for friend actions
+                    if (event.target.classList.contains('accept-friend-btn')) {
+                        const senderId = event.target.dataset.senderId;
+                        const requestId = event.target.dataset.requestId;
+                        showCustomConfirm('Are you sure you want to accept this friend request?', async () => {
+                            try {
+                                await updateDoc(doc(db, 'users', currentUserId, 'friendRequests', requestId), { status: 'accepted', acceptedAt: serverTimestamp() });
+                                await updateDoc(doc(db, 'users', currentUserId), { friends: arrayUnion(senderId) });
+                                await updateDoc(doc(db, 'users', senderId), { friends: arrayUnion(currentUserId) });
+                                showMessage(activeFriendRequestMessage, 'Friend request accepted!', false);
+                            } catch (error) {
+                                console.error("Error accepting friend request:", error);
+                                showMessage(activeFriendRequestMessage, 'Failed to accept request. Check console.', true);
+                            }
+                        });
+                    } else if (event.target.classList.contains('decline-friend-btn')) {
+                        const requestId = event.target.dataset.requestId;
+                        showCustomConfirm('Are you sure you want to decline this friend request?', async () => {
+                            try {
+                                await updateDoc(doc(db, 'users', currentUserId, 'friendRequests', requestId), { status: 'declined', declinedAt: serverTimestamp() });
+                                showMessage(activeFriendRequestMessage, 'Friend request declined.', false);
+                            } catch (error) {
+                                console.error("Error declining friend request:", error);
+                                showMessage(activeFriendRequestMessage, 'Failed to decline request. Check console.', true);
+                            }
+                        });
+                    } else if (event.target.classList.contains('dm-friend-item')) {
+                        const clickedFriendId = event.target.dataset.friendId;
+                        const clickedFriendName = event.target.dataset.friendName;
+                        selectDm(clickedFriendId, clickedFriendName);
+                    }
+                });
+            }
+
+
+            activateServerIcon('dm-icon-wrapper');
+            fetchFriends(friendsContent); // Pass the cloned element to fetchFriends
+        }
+
+        async function showServerChatView(server) {
+            currentView = 'server-chat';
+            selectedServer = server;
+            selectedDM = null; // Clear selected DM
+
+            // Unsubscribe from DM-related listeners
+            if (unsubscribeDMs) unsubscribeDMs();
+            unsubscribeDMs = null;
+            if (unsubscribeMessages) unsubscribeMessages(); // Stop previous messages listener
+            unsubscribeMessages = null;
+
+
+            if (leftPanel) leftPanel.classList.remove('hidden');
+            if (mainContentPanel) mainContentPanel.classList.remove('hidden');
+            hideAllMainContent();
+            clearLeftPanelContent();
+
+            if (leftPanelHeader) leftPanelHeader.textContent = server.name;
+            if (mainContentHeader) mainContentHeader.textContent = `Loading Channels...`; // Will update after channels load
+            if (serverSettingsButtonWrapper) serverSettingsButtonWrapper.classList.remove('hidden'); // Show settings button
+
+            if (chatContent) chatContent.classList.remove('hidden'); // Show chat interface
+            if (messagesListEl) messagesListEl.innerHTML = ''; // Clear previous messages
+
+            activateServerIcon(`server-icon-${server.id}`);
+            fetchChannelsForServer(server.id); // Fetch and display channels
+        }
+
+        async function showServerSettingsView(server) {
+            currentView = 'server-settings';
+            selectedServer = server;
+            selectedChannel = null; // Clear selected channel
+            selectedDM = null; // Clear selected DM
+
+            // Unsubscribe from chat/DM messages
+            if (unsubscribeMessages) unsubscribeMessages();
+            unsubscribeMessages = null;
+            if (unsubscribeChannels) unsubscribeChannels(); // Stop channel list listener
+            unsubscribeChannels = null;
+            if (unsubscribeDMs) unsubscribeDMs();
+            unsubscribeDMs = null;
+
+
+            if (leftPanel) leftPanel.classList.remove('hidden');
+            if (mainContentPanel) mainContentPanel.classList.remove('hidden');
+            hideAllMainContent();
+            clearLeftPanelContent();
+
+            if (leftPanelHeader) leftPanelHeader.textContent = server.name;
+            if (mainContentHeader) mainContentHeader.textContent = `Server Settings: ${server.name}`;
+            if (serverSettingsButtonWrapper) serverSettingsButtonWrapper.classList.add('hidden'); // Hide settings button when already in settings
+
+            if (serverSettingsContent) serverSettingsContent.classList.remove('hidden'); // Show server settings interface
+
+            // Populate server settings content
+            // Defensive checks in case elements are unexpectedly null (though logs above should catch this)
+            if (settingsServerName) settingsServerName.textContent = server.name;
+            if (settingsServerId) settingsServerId.textContent = server.customId;
+            // Fetch owner username
+            const ownerDocSnap = await getDoc(doc(db, 'users', server.ownerId));
+            if (settingsCreatedBy) settingsCreatedBy.textContent = ownerDocSnap.exists() ? ownerDocSnap.data().username : 'Unknown User';
+
+            // Fetch and display members
+            if (server.members && server.members.length > 0) {
+                // Member count no longer used, remove below lines if no longer in UI
+                // if (settingsMemberCount) settingsMemberCount.textContent = server.members.length;
+                if (settingsMemberList) settingsMemberList.innerHTML = ''; // Ensure this element exists
+                for (const memberId of server.members) { // Corrected: Removed initializer
+                    const memberProfileSnap = await getDoc(doc(db, 'users', memberId));
+                    if (memberProfileSnap.exists()) {
+                        const memberUsername = memberProfileSnap.data().username;
+                        const listItem = document.createElement('li');
+                        listItem.textContent = memberUsername;
+                        if (settingsMemberList) settingsMemberList.appendChild(listItem);
+                    }
+                }
+            } else {
+                // if (settingsMemberCount) settingsMemberCount.textContent = '0'; // If element exists
+                if (settingsMemberList) settingsMemberList.innerHTML = 'No members.';
+            }
+
+            // Populate admins list
+            if (settingsAdminList) settingsAdminList.innerHTML = '';
+            if (server.admins && server.admins.length > 0) {
+                for (const adminId of server.admins) {
+                    const adminProfileSnap = await getDoc(doc(db, 'users', adminId));
+                    if (adminProfileSnap.exists()) {
+                        const adminUsername = adminProfileSnap.data().username;
+                        const listItem = document.createElement('li');
+                        listItem.className = 'flex items-center justify-between text-gray-200';
+                        listItem.innerHTML = `
+                            <span>${adminUsername} ${adminId === currentUserId ? '(You)' : ''}</span>
+                            <button data-admin-id="${adminId}" class="remove-admin-btn bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded-full ${isOwner() && adminId !== currentUserId ? '' : 'hidden'}">Remove</button>
+                        `;
+                        if (settingsAdminList) settingsAdminList.appendChild(listItem);
+                    }
+                }
+            } else {
+                const listItem = document.createElement('li');
+                listItem.textContent = 'No admins yet.';
+                if (settingsAdminList) settingsAdminList.appendChild(listItem);
+            }
+
+            // Populate channels list for settings
+            if (settingsChannelList) settingsChannelList.innerHTML = '';
+            const channelsRef = collection(db, 'servers', server.id, 'channels');
+            const channelsQuery = query(channelsRef, orderBy('createdAt', 'asc'));
+            const channelsSnapshot = await getDocs(channelsQuery); // Get current channels once for settings display
+            if (!channelsSnapshot.empty) {
+                channelsSnapshot.docs.forEach(channelDoc => {
+                    const channel = { id: channelDoc.id, ...channelDoc.data() };
+                    const listItem = document.createElement('li');
+                    listItem.className = 'flex items-center justify-between text-gray-200';
+                    listItem.innerHTML = `
+                        <span># ${channel.name} ${channel.id === selectedChannel?.id ? '(Active)' : ''}</span>
+                        <button data-channel-id="${channel.id}" class="edit-channel-btn bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded-full ${hasManagementPermissions() ? '' : 'hidden'}">Edit</button>
+                    `;
+                    if (settingsChannelList) settingsChannelList.appendChild(listItem);
+                });
+            } else {
+                const listItem = document.createElement('li');
+                listItem.textContent = 'No channels yet.';
+                if (settingsChannelList) settingsChannelList.appendChild(listItem);
+            }
+
+            // Enable/Disable admin/channel management controls based on ownership/admin status
+            const managementControls = document.querySelectorAll('#admin-management-controls, #channel-management-controls');
+            managementControls.forEach(control => {
+                if (hasManagementPermissions()) {
+                    control.classList.remove('hidden');
+                } else {
+                    control.classList.add('hidden');
+                }
+            });
+
+            // Specific controls for owner only (Delete Server button)
+            if (deleteServerBtn) { // Add null check
+                if (isOwner()) {
+                    deleteServerBtn.classList.remove('hidden');
+                } else {
+                    deleteServerBtn.classList.add('hidden');
+                }
+            }
+
+            // Add/Remove Admin buttons controlled by owner status
+            if (addAdminBtn) {
+                if (isOwner()) {
+                    addAdminBtn.classList.remove('hidden');
+                } else {
+                    addAdminBtn.classList.add('hidden');
+                }
+            }
+            document.querySelectorAll('.remove-admin-btn').forEach(btn => {
+                if (isOwner() && btn.dataset.adminId !== currentUserId) {
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                }
+            });
+
+
+            // Populate left panel with settings navigation
+            if (leftPanelContent) { // Add null check
+                leftPanelContent.innerHTML = `
+                    <div class="mb-4">
+                        <p class="text-gray-400 text-sm font-semibold mb-2">SERVER SETTINGS</p>
+                        <div class="p-2 mb-1 bg-blue-700 rounded-md text-white cursor-default">
+                            Overview
+                        </div>
+                        <div class="p-2 mb-1 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600 text-gray-200" id="back-to-server-chat-btn">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to Chat
+                        </div>
+                    </div>
+                `;
+                const backToServerChatBtn = document.getElementById('back-to-server-chat-btn');
+                if (backToServerChatBtn) { // Add null check
+                    backToServerChatBtn.addEventListener('click', () => showServerChatView(selectedServer));
+                }
+            }
+
+            activateServerIcon(`server-icon-${server.id}`);
+        }
+
+
+        // DM Chat View
+        async function showDmChatView(friendId, friendName) {
+            currentView = 'dm-chat';
+            selectedServer = null; // Clear selected server
+            selectedChannel = null; // Clear selected channel
+            selectedDM = { id: friendId, name: friendName };
+
+            // Unsubscribe from server-related listeners
+            if (unsubscribeChannels) unsubscribeChannels();
+            unsubscribeChannels = null;
+            if (unsubscribeMessages) unsubscribeMessages();
+            unsubscribeMessages = null;
+
+            if (leftPanel) leftPanel.classList.remove('hidden');
+            if (mainContentPanel) mainContentPanel.classList.remove('hidden');
+            hideAllMainContent();
+            clearLeftPanelContent();
+
+            if (leftPanelHeader) leftPanelHeader.textContent = 'Direct Messages';
+            if (mainContentHeader) mainContentHeader.textContent = `@${friendName}`;
+            if (serverSettingsButtonWrapper) serverSettingsButtonWrapper.classList.add('hidden'); // No settings button for DMs
+
+            if (chatContent) chatContent.classList.remove('hidden'); // Show chat interface
+            if (messagesListEl) messagesListEl.innerHTML = ''; // Clear previous messages
+            if (messageSendError) messageSendError.classList.add('hidden'); // Hide any previous send errors
+
+            // Populate left panel with DM conversations (simplified: just the active one and others if needed)
+            const dmListFrag = dmListContentTemplate.cloneNode(true);
+            if (dmListFrag) { // Add null check
+                dmListFrag.id = 'active-dm-list-content';
+                dmListFrag.classList.remove('hidden');
+                if (leftPanelContent) leftPanelContent.appendChild(dmListFrag);
+            }
+
+
+            const activeDmConversationsList = dmListFrag ? dmListFrag.querySelector('#dm-conversations-list') : null;
+
+            // Add the selected DM to the list
+            if (activeDmConversationsList) { // Add null check
+                const dmItem = document.createElement('div');
+                dmItem.className = `p-2 mb-1 rounded-md cursor-pointer text-gray-200 font-semibold
+                                    ${selectedDM && selectedDM.id === friendId ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'}`;
+                dmItem.textContent = friendName;
+                dmItem.dataset.friendId = friendId;
+                dmItem.dataset.friendName = friendName;
+                dmItem.classList.add('dm-friend-item');
+                activeDmConversationsList.appendChild(dmItem);
+            }
+
+
+            // Re-attach friend list to enable adding new friends (below DM conversations)
+            const friendsContent = friendsListContentTemplate.cloneNode(true);
+            if (friendsContent) { // Add null check
+                friendsContent.id = 'dm-view-friends-list-content';
+                friendsContent.classList.remove('hidden');
+                if (leftPanelContent) leftPanelContent.appendChild(friendsContent);
+            }
+
+
+            const activeFriendsListEl = friendsContent ? friendsContent.querySelector('#friends-list') : null;
+            const activeAddFriendUsernameInput = friendsContent ? friendsContent.querySelector('#add-friend-username-input') : null;
+            const activeSendFriendRequestBtn = friendsContent ? friendsContent.querySelector('#send-friend-request-btn') : null;
+            const activeFriendRequestMessage = friendsContent ? friendsContent.querySelector('#friend-request-message') : null;
+
+            if (activeSendFriendRequestBtn) { // Add null check
+                activeSendFriendRequestBtn.onclick = async () => {
+                    const targetUsername = activeAddFriendUsernameInput.value.trim();
+                    if (activeFriendRequestMessage) activeFriendRequestMessage.classList.add('hidden');
+                    if (!targetUsername || !currentUserId || targetUsername === currentUsername) {
+                        showMessage(activeFriendRequestMessage, 'Invalid username or cannot send request to self.', true);
+                        return;
+                    }
+                    try {
+                        const usersRef = collection(db, 'users');
+                        const q = query(usersRef, where('username', '==', targetUsername));
+                        const querySnapshot = await getDocs(q);
+                        if (querySnapshot.empty) {
+                            showMessage(activeFriendRequestMessage, `User '${targetUsername}' not found.`, true);
+                            return;
+                        }
+                        const targetUserDoc = querySnapshot.docs[0];
+                        const targetUserId = targetUserDoc.id;
+
+                        const currentUserDocSnap = await getDoc(doc(db, 'users', currentUserId));
+                        if (currentUserDocSnap.exists() && currentUserDocSnap.data().friends && currentUserDocSnap.data().friends.includes(targetUserId)) {
+                            showMessage(activeFriendRequestMessage, `${targetUsername} is already your friend.`, false);
+                            if (activeAddFriendUsernameInput) activeAddFriendUsernameInput.value = '';
+                            return;
+                        }
+                        const existingRequestQuery = query(
+                            collection(db, 'users', targetUserId, 'friendRequests'),
+                            where('senderId', '==', currentUserId),
+                            where('status', '==', 'pending')
+                        );
+                        const existingRequestSnap = await getDocs(existingRequestQuery);
+                        if (!existingRequestSnap.empty) {
+                            showMessage(activeFriendRequestMessage, `A pending request to ${targetUsername} already exists.`, false);
+                            if (activeAddFriendUsernameInput) activeAddFriendUsernameInput.value = '';
+                            return;
+                        }
+                        await addDoc(collection(db, 'users', targetUserId, 'friendRequests'), {
+                            senderId: currentUserId,
+                            senderUsername: currentUsername,
+                            status: 'pending',
+                            createdAt: serverTimestamp()
+                        });
+                        showMessage(activeFriendRequestMessage, `Friend request sent to ${targetUsername}!`, false);
+                        if (activeAddFriendUsernameInput) activeAddFriendUsernameInput.value = '';
+                    } catch (error) {
+                        console.error("Error sending friend request:", error);
+                        showMessage(activeFriendRequestMessage, 'Failed to send request. Check console.', true);
+                    }
+                };
+            }
+
+
+            // Listener for friend list items (delegated to leftPanelContent)
+            if (leftPanelContent) { // Add null check
+                leftPanelContent.addEventListener('click', async (event) => {
+                    if (event.target.classList.contains('accept-friend-btn')) {
+                        const senderId = event.target.dataset.senderId;
+                        const requestId = event.target.dataset.requestId;
+                        showCustomConfirm('Are you sure you want to accept this friend request?', async () => {
+                            try {
+                                await updateDoc(doc(db, 'users', currentUserId, 'friendRequests', requestId), { status: 'accepted', acceptedAt: serverTimestamp() });
+                                await updateDoc(doc(db, 'users', currentUserId), { friends: arrayUnion(senderId) });
+                                await updateDoc(doc(db, 'users', senderId), { friends: arrayUnion(currentUserId) });
+                                showMessage(activeFriendRequestMessage, 'Friend request accepted!', false);
+                            } catch (error) {
+                                console.error("Error accepting friend request:", error);
+                                showMessage(activeFriendRequestMessage, 'Failed to accept request. Check console.', true);
+                            }
+                        });
+                    } else if (event.target.classList.contains('decline-friend-btn')) {
+                        const requestId = event.target.dataset.requestId;
+                        showCustomConfirm('Are you sure you want to decline this friend request?', async () => {
+                            try {
+                                await updateDoc(doc(db, 'users', currentUserId, 'friendRequests', requestId), { status: 'declined', declinedAt: serverTimestamp() });
+                                showMessage(activeFriendRequestMessage, 'Friend request declined.', false);
+                            } catch (error) {
+                                console.error("Error declining friend request:", error);
+                                showMessage(activeFriendRequestMessage, 'Failed to decline request. Check console.', true);
+                            }
+                        });
+                    } else if (event.target.classList.contains('dm-friend-item')) {
+                        const clickedFriendId = event.target.dataset.friendId;
+                        const clickedFriendName = event.target.dataset.friendName;
+                        selectDm(clickedFriendId, clickedFriendName);
+                    }
+                });
+            }
+
+
+            activateServerIcon('dm-icon-wrapper');
+            fetchMessages(currentUserId, 'dm', friendId); // Use unified fetchMessages
+            fetchFriends(friendsContent); // Ensure the friend list updates within DM view
+        }
+
+        // --- Event Listeners for UI Actions ---
+
+        if (dmIconWrapper) { // Add null check
+            dmIconWrapper.addEventListener('click', showDmListView);
+        }
+        if (openServerSettingsBtn) { // Add null check
+            openServerSettingsBtn.addEventListener('click', () => {
+                if (selectedServer) {
+                    showServerSettingsView(selectedServer);
+                }
+            });
+        }
+        if (addServerIcon) { // Add null check
+            addServerIcon.addEventListener('click', () => {
+                if (serverManagementModal) serverManagementModal.classList.remove('hidden');
+                if (createServerForm) createServerForm.classList.add('hidden');
+                if (joinServerForm) joinServerForm.classList.add('hidden');
+                if (createServerMessage) createServerMessage.classList.add('hidden');
+                if (joinServerMessage) joinServerMessage.classList.add('hidden');
+            });
+        }
+        if (closeServerManagementModalBtn) { // Add null check
+            closeServerManagementModalBtn.addEventListener('click', () => {
+                if (serverManagementModal) serverManagementModal.classList.add('hidden');
+            });
+        }
+        if (openCreateServerFormBtn) { // Add null check
+            openCreateServerFormBtn.addEventListener('click', () => {
+                if (createServerForm) createServerForm.classList.remove('hidden');
+                if (joinServerForm) joinServerForm.classList.add('hidden');
+                if (createServerMessage) createServerMessage.classList.add('hidden');
+                if (joinServerMessage) joinServerMessage.classList.add('hidden'); // Clear any previous messages
+                if (newServerIdInput) newServerIdInput.value = ''; // Clear inputs
+                if (newServerNameInput) newServerNameInput.value = '';
+            });
+        }
+        if (openJoinServerFormBtn) { // Add null check
+            openJoinServerFormBtn.addEventListener('click', () => {
+                if (joinServerForm) joinServerForm.classList.remove('hidden');
+                if (createServerForm) createServerForm.classList.add('hidden');
+                if (joinServerMessage) joinServerMessage.classList.add('hidden'); // Clear any previous messages
+                if (joinServerIdInput) joinServerIdInput.value = ''; // Clear input
+            });
+        }
+
+
+        // --- Authentication Logic ---
+        if (signupBtn) { // Add null check
+            signupBtn.addEventListener('click', async () => {
+                const username = authUsernameInput.value.trim();
+                const password = authPasswordInput.value.trim();
+                const email = `${username}@${APP_DOMAIN}`;
+
+                if (authErrorMessage) authErrorMessage.classList.add('hidden');
+
+                if (!username || !password) { showMessage(authErrorMessage, 'Please fill in all fields (username and password).', true); return; }
+                if (username.length < 3) { showMessage(authErrorMessage, 'Username must be at least 3 characters long.', true); return; }
+                if (password.length < 6) { showMessage(authErrorMessage, 'Password must be at least 6 characters long.', true); return; }
+
+                try {
+                    const usersRef = collection(db, 'users');
+                    const q = query(usersRef, where('username', '==', username));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) { showMessage(authErrorMessage, 'This username is already taken. Please choose another.', true); return; }
+
+                    console.log(`[Auth] Attempting to create user with email: ${email}`);
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    console.log(`[Auth] User credential received: UID = ${userCredential.user.uid}. Awaiting onAuthStateChanged to create profile.`);
+                    showMessage(authErrorMessage, 'Account created successfully! Redirecting...', false); // Added success message here
+
+                } catch (error) {
+                    console.error('Sign-up error:', error);
+                    let message = 'An unknown error occurred during sign-up.';
+                    if (error.code === 'auth/email-already-in-use') { message = 'This username (or its associated internal email) is already in use. Please try logging in or choose a different username.';
+                    } else if (error.code === 'auth/invalid-email') { message = 'Internal email generated is invalid. This should not happen.';
+                    } else if (error.code === 'auth/weak-password') { message = 'Password is too weak. Must be at least 6 characters.';
+                    } else if (error.code === 'auth/operation-not-allowed') { message = 'Sign-up method not enabled. Please enable Email/Password in Firebase Authentication settings.'; console.error('CRITICAL: Email/Password authentication is likely not enabled in Firebase project settings.'); }
+                    showMessage(authErrorMessage, message, true);
+                }
+            });
+        }
+
+
+        if (loginBtn) { // Add null check
+            loginBtn.addEventListener('click', async () => {
+                const username = authUsernameInput.value.trim();
+                const password = authPasswordInput.value.trim();
+                if (authErrorMessage) authErrorMessage.classList.add('hidden');
+                if (!username || !password) { showMessage(authErrorMessage, 'Please enter both username and password.', true); return; }
+                try {
+                    const usersRef = collection(db, 'users');
+                    const q = query(usersRef, where('username', '==', username));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) { showMessage(authErrorMessage, 'Invalid username or password.', true); return; }
+                    const userDoc = querySnapshot.docs[0].data();
+                    const userEmail = userDoc.email;
+                    console.log(`[Auth] Attempting to log in user ${username} with internal email: ${userEmail}`);
+                    await signInWithEmailAndPassword(auth, userEmail, password);
+                    console.log("[Auth] User logged in successfully!");
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showMessage(authErrorMessage, 'Invalid username or password.', true);
+                }
+            });
+        }
+
+
+        if (logoutBtn) { // Add null check
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    console.log("[Auth] User logged out.");
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    showMessage(authErrorMessage, 'Failed to log out.', true);
+                }
+            });
+        }
+
+
+        onAuthStateChanged(auth, async (user) => {
+            console.log('Auth state changed. User object received:', user ? 'Yes' : 'No');
+            if (user) {
+                currentUser = user;
+                currentUserId = user.uid;
+                if (authSection) authSection.classList.add('hidden');
+                if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+                if (leftPanel) leftPanel.classList.remove('hidden');
+                if (mainContentPanel) mainContentPanel.classList.remove('hidden');
+
+                const userDocRef = doc(db, 'users', currentUserId);
+                console.log(`[Firestore] Fetching user profile for UID: ${currentUserId}`);
+                const userDocSnap = await getDoc(userDocRef);
+
+                if (userDocSnap.exists()) {
+                    currentUsername = userDocSnap.data().username;
+                    if (displayUserNameEl) displayUserNameEl.textContent = currentUsername;
+                    if (displayUserIdEl) displayUserIdEl.textContent = currentUserId;
+                    console.log(`[Auth] User ${currentUsername} (${currentUserId}) authenticated and profile loaded.`);
+                } else {
+                    console.warn("[Firestore] User profile not found. Attempting to create profile.");
+                    const initialUsername = (authUsernameInput ? authUsernameInput.value.trim() : '') || `User-${Math.random().toString(36).substring(2, 8)}`;
+                    const initialEmail = user.email || `${initialUsername}@${APP_DOMAIN}`;
+                    try {
+                        console.log(`[Firestore] Creating user profile for UID: ${currentUserId} with username: ${initialUsername}`);
+                        await setDoc(doc(db, 'users', currentUserId), {
+                            userId: currentUserId,
+                            username: initialUsername,
+                            email: initialEmail,
+                            createdAt: serverTimestamp(),
+                            friends: [], // Initialize friends array
+                            dms: [] // Initialize DMs array (for tracking conversations)
+                        });
+                        currentUsername = initialUsername;
+                        if (displayUserNameEl) displayUserNameEl.textContent = currentUsername;
+                        if (displayUserIdEl) displayUserIdEl.textContent = currentUserId;
+                        console.log('[Firestore] User profile created successfully via onAuthStateChanged.');
+                        showMessage(displayUserNameEl ? displayUserNameEl.parentElement : null, 'Profile setup complete! Welcome to ChromeCord.', false); // Added success message here
+                    } catch (createError) {
+                        console.error('[Firestore Error] Failed to create user profile during onAuthStateChanged:', createError);
+                        if (createError.code === 'permission-denied') {
+                            console.error('CRITICAL: Firestore permission denied when creating user profile. Check rules for /users/{userId}');
+                        }
+                        // Modified to show the error code/message from the Firebase error object
+                        showMessage(authErrorMessage, `Failed to set up user profile: ${createError.code || createError.message}. Please check Firebase rules or try re-logging.`, true);
+                    }
+                }
+
+                // REMOVED: Schoolwide Server Auto-Join Logic
+
+                fetchUserServers();
+                showDmListView();
+            } else {
+                console.log('[Auth] No user authenticated or user logged out. Resetting UI.');
+                currentUser = null;
+                currentUserId = null;
+                currentUsername = 'Guest';
+                if (displayUserNameEl) displayUserNameEl.textContent = 'N/A';
+                if (displayUserIdEl) displayUserIdEl.textContent = 'N/A';
+                if (authSection) authSection.classList.remove('hidden');
+                if (mainAppContainer) mainAppContainer.classList.add('hidden');
+                if (leftPanel) leftPanel.classList.add('hidden');
+                if (mainContentPanel) mainContentPanel.classList.add('hidden');
+                if (serversIconList) serversIconList.innerHTML = '';
+                if (messagesListEl) messagesListEl.innerHTML = '';
+                clearLeftPanelContent();
+                hideAllMainContent();
+                if (unsubscribeMessages) unsubscribeMessages();
+                if (unsubscribeServers) unsubscribeServers();
+                if (unsubscribeChannels) unsubscribeChannels();
+                if (unsubscribeFriends) unsubscribeFriends();
+                if (unsubscribeDMs) unsubscribeDMs();
+                unsubscribeMessages = null;
+                unsubscribeServers = null;
+                unsubscribeChannels = null;
+                unsubscribeFriends = null;
+                unsubscribeDMs = null;
+            }
+        });
+
+        // --- User Profile (Username) Management ---
+        if (editNameBtn) { // Add null check
+            editNameBtn.addEventListener('click', () => {
+                if (nameInputField) nameInputField.value = currentUsername;
+                if (nameModal) nameModal.classList.remove('hidden');
+                if (usernameErrorMessage) usernameErrorMessage.classList.add('hidden');
+            });
+        }
+
+
+        if (cancelNameBtn) { // Add null check
+            cancelNameBtn.addEventListener('click', () => {
+                if (nameModal) nameModal.classList.add('hidden');
+            });
+        }
+
+
+        if (saveNameBtn) { // Add null check
+            saveNameBtn.addEventListener('click', async () => {
+                const newUsername = nameInputField ? nameInputField.value.trim() : '';
+                if (usernameErrorMessage) usernameErrorMessage.classList.add('hidden');
+                if (!newUsername) { showMessage(usernameErrorMessage, "Username cannot be empty.", true); return; }
+                if (newUsername.length < 3) { showMessage(usernameErrorMessage, "Username must be at least 3 characters long.", true); return; }
+                if (newUsername === currentUsername) { if (nameModal) nameModal.classList.add('hidden'); return; }
+                if (currentUserId) {
+                    try {
+                        const usersRef = collection(db, 'users');
+                        const q = query(usersRef, where('username', '==', newUsername));
+                        const querySnapshot = await getDocs(q);
+                        if (!querySnapshot.empty && querySnapshot.docs[0].id !== currentUserId) {
+                            showMessage(usernameErrorMessage, 'This username is already taken. Please choose another.', true);
+                            return;
+                        }
+                        const userDocRef = doc(db, 'users', currentUserId);
+                        console.log(`[Firestore] Attempting to update username to: ${newUsername} for UID: ${currentUserId}`);
+                        await setDoc(userDocRef, { username: newUsername }, { merge: true });
+                        currentUsername = newUsername;
+                        if (displayUserNameEl) displayUserNameEl.textContent = newUsername;
+                        if (nameModal) nameModal.classList.add('hidden');
+                        showMessage(displayUserNameEl ? displayUserNameEl.parentElement : null, 'Username updated successfully!', false);
+                        console.log('[Firestore] Username successfully updated.');
+                    } catch (error) {
+                        console.error("Error updating username:", error);
+                        showMessage(usernameErrorMessage, 'Failed to update username. Check console for details.', true);
+                    }
+                } else {
+                    showMessage(usernameErrorMessage, "Not logged in to save username.", true);
+                }
+            });
+        }
+
+
+        // --- Server Management (Icons and Modals) ---
+        // Fetches servers the current user is a member of and displays them as icons
+        function fetchUserServers() {
+            if (!currentUserId) { console.warn('Cannot fetch servers: User not authenticated.'); return; }
+            if (unsubscribeServers) { unsubscribeServers(); }
+            if (serversIconList) serversIconList.innerHTML = '';
+
+            const serversRef = collection(db, 'servers');
+            const q = query(serversRef, orderBy('createdAt', 'asc'));
+
+            unsubscribeServers = onSnapshot(q, async (snapshot) => {
+                if (serversIconList) serversIconList.innerHTML = '';
+                snapshot.docs.forEach((doc) => {
+                    const server = { id: doc.id, ...doc.data() };
+                    if (server.members && server.members.includes(currentUserId)) {
+                        const serverIconWrapper = document.createElement('div');
+                        serverIconWrapper.id = `server-icon-${server.id}`;
+                        serverIconWrapper.className = `server-icon-wrapper relative w-12 h-12 flex items-center justify-center rounded-full bg-gray-700 cursor-pointer hover:rounded-xl hover:bg-blue-600 transition-all duration-200 ease-in-out group`;
+                        serverIconWrapper.innerHTML = `
+                            <span class="server-icon text-white font-semibold text-lg flex items-center justify-center w-full h-full rounded-full">${generateServerIconText(server.name)}</span>
+                            <span class="tooltip">${server.name}</span>
+                        `;
+                        serverIconWrapper.addEventListener('click', () => showServerChatView(server));
+                        if (serversIconList) serversIconList.appendChild(serverIconWrapper);
+                    }
+                });
+                if (selectedServer && document.getElementById(`server-icon-${selectedServer.id}`)) {
+                     activateServerIcon(`server-icon-${selectedServer.id}`);
+                } else if (currentView === 'dm-list' || currentView === 'dm-chat') {
+                    activateServerIcon('dm-icon-wrapper');
+                }
+            }, (error) => {
+                console.error("Error fetching user servers:", error);
+            });
+        }
+
+        if (createServerBtn) { // Add null check
+            createServerBtn.addEventListener('click', async () => {
+                const customId = newServerIdInput ? newServerIdInput.value.trim().toLowerCase() : '';
+                const serverName = newServerNameInput ? newServerNameInput.value.trim() : '';
+                if (createServerMessage) createServerMessage.classList.add('hidden');
+
+                if (!customId || !serverName || !currentUserId) {
+                    showMessage(createServerMessage, 'Server ID and Name cannot be empty and you must be logged in.', true);
+                    return;
+                }
+                try {
+                    const serverDocRef = doc(db, 'servers', customId);
+                    const serverSnap = await getDoc(serverDocRef);
+                    if (serverSnap.exists()) {
+                        showMessage(createServerMessage, `Server ID '${customId}' already exists.`, true);
+                        return;
+                    }
+
+                    // Create the server document
+                    await setDoc(serverDocRef, {
+                        name: serverName,
+                        customId: customId,
+                        createdAt: serverTimestamp(),
+                        ownerId: currentUserId, // Set ownerId
+                        creatorName: currentUsername,
+                        members: [currentUserId],
+                        admins: [] // Initialize admins array
+                    });
+                    console.log(`[Firestore] Server '${serverName}' (${customId}) created successfully.`);
+
+                    // Create default channels
+                    const channelsCollectionRef = collection(db, 'servers', customId, 'channels');
+                    try {
+                        await addDoc(channelsCollectionRef, { name: 'general', type: 'text', canTalk: true, createdAt: serverTimestamp() });
+                        console.log(`[Firestore] Default channel 'general' created for server '${customId}'.`);
+                    } catch (channelError1) {
+                        console.error(`[Firestore Error] Failed to create default 'general' channel for server '${customId}':`, channelError1);
+                        showMessage(createServerMessage, `Server created, but failed to create default '#general' channel. Permissions issue?`, true);
+                        // Don't return, let the next channel creation attempt
+                    }
+                    try {
+                        await addDoc(channelsCollectionRef, { name: 'announcements', type: 'text', canTalk: false, createdAt: serverTimestamp() });
+                        console.log(`[Firestore] Default channel 'announcements' created for server '${customId}'.`);
+                    } catch (channelError2) {
+                        console.error(`[Firestore Error] Failed to create default 'announcements' channel for server '${customId}':`, channelError2);
+                        showMessage(createServerMessage, `Server created, but failed to create default '#announcements' channel. Permissions issue?`, true);
+                        // Don't return, allow successful creation flow to complete if server itself was fine
+                    }
+
+
+                    if (newServerIdInput) newServerIdInput.value = '';
+                    if (newServerNameInput) newServerNameInput.value = '';
+                    showMessage(createServerMessage, `Server '${serverName}' created!`, false);
+                    if (serverManagementModal) serverManagementModal.classList.add('hidden');
+                } catch (error) {
+                    console.error("Error creating server (main document or initial channels failed):", error);
+                    let errorMessage = 'Failed to create server.';
+                    if (error.code === 'permission-denied') {
+                        errorMessage += ' Check Firestore Security Rules for "servers" collection.';
+                        console.error("CRITICAL: Server creation failed due to permission-denied. Check rules for /servers/{serverId}");
+                    }
+                    showMessage(createServerMessage, errorMessage, true);
+                }
+            });
+        }
+
+
+        if (joinServerBtn) { // Add null check
+            joinServerBtn.addEventListener('click', async () => {
+                const customIdToJoin = joinServerIdInput ? joinServerIdInput.value.trim().toLowerCase() : '';
+                if (joinServerMessage) joinServerMessage.classList.add('hidden');
+                if (!customIdToJoin || !currentUserId) {
+                    showMessage(joinServerMessage, 'Please enter a Server ID to join and you must be logged in.', true);
+                    return;
+                }
+                try {
+                    const serverDocRef = doc(db, 'servers', customIdToJoin);
+                    const serverSnap = await getDoc(serverDocRef);
+                    if (!serverSnap.exists()) { showMessage(joinServerMessage, `Server ID '${customIdToJoin}' not found.`, true); return; }
+                    const serverData = serverSnap.data();
+                    if (serverData.members && serverData.members.includes(currentUserId)) {
+                        showMessage(joinServerMessage, `You are already a member of '${serverData.name}'.`, false);
+                        if (joinServerIdInput) joinServerIdInput.value = '';
+                        if (serverManagementModal) serverManagementModal.classList.add('hidden');
+                        showServerChatView({ id: serverSnap.id, ...serverData });
+                        return;
+                    }
+                    await updateDoc(serverDocRef, { members: arrayUnion(currentUserId) });
+                    if (joinServerIdInput) joinServerIdInput.value = '';
+                    showMessage(joinServerMessage, `Joined server '${serverData.name}'!`, false);
+                    if (serverManagementModal) serverManagementModal.classList.add('hidden');
+                } catch (error) {
+                    console.error("Error joining server:", error);
+                    showMessage(joinServerMessage, 'Failed to join server. Check console for details.', true);
+                }
+            });
+        }
+
+
+        if (leaveServerBtn) { // Add null check
+            leaveServerBtn.addEventListener('click', () => {
+                if (!selectedServer || !currentUserId) return;
+                showCustomConfirm(`Are you sure you want to leave ${selectedServer.name}?`, async () => {
+                    try {
+                        const serverDocRef = doc(db, 'servers', selectedServer.id);
+                        await updateDoc(serverDocRef, { members: arrayRemove(currentUserId) });
+                        console.log(`User ${currentUsername} left server ${selectedServer.name}.`);
+                        selectedServer = null;
+                        showDmListView();
+                    } catch (error) {
+                        console.error("Error leaving server:", error);
+                        showMessage(mainContentHeader ? mainContentHeader.parentElement : null, 'Failed to leave server.', true);
+                    }
+                });
+            });
+        }
+
+
+        if (deleteServerBtn) { // Add null check
+            deleteServerBtn.addEventListener('click', () => {
+                console.log("Delete server button clicked.");
+                if (!selectedServer) {
+                    console.error("Delete server failed: No server selected.");
+                    showMessage(adminMessage, "No server is selected to delete.", true);
+                    return;
+                }
+                if (!currentUserId) {
+                    console.error("Delete server failed: User not authenticated.");
+                    showMessage(adminMessage, "You must be logged in to delete a server.", true);
+                    return;
+                }
+                if (!isOwner()) {
+                    console.error("Delete server failed: User is not the owner.", { selectedServer, currentUserId });
+                    showMessage(adminMessage, "Only the server owner can delete the server.", true);
+                    return;
+                }
+
+                showCustomConfirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the server "${selectedServer.name}"? This action cannot be undone.`, async () => {
+                    try {
+                        console.log(`Attempting to delete server: ${selectedServer.id}`);
+                        // Delete all channels and their messages first (Firestore doesn't auto-delete subcollections)
+                        const channelsQuery = query(collection(db, 'servers', selectedServer.id, 'channels'));
+                        const channelsSnapshot = await getDocs(channelsQuery);
+                        for (const channelDoc of channelsSnapshot.docs) {
+                            try {
+                                const messagesQuery = query(collection(db, 'servers', selectedServer.id, 'channels', channelDoc.id, 'messages'));
+                                const messagesSnapshot = await getDocs(messagesQuery);
+                                for (const messageDoc of messagesSnapshot.docs) {
+                                    try {
+                                        await deleteDoc(doc(db, 'servers', selectedServer.id, 'channels', channelDoc.id, 'messages', messageDoc.id));
+                                        console.log(`  Deleted message: ${messageDoc.id} from channel: ${channelDoc.id}`);
+                                    } catch (msgDeleteError) {
+                                        console.error(`Error deleting message ${messageDoc.id} from channel ${channelDoc.id}:`, msgDeleteError);
+                                        // Continue trying to delete other messages/channels, but log the error
+                                    }
+                                }
+                                await deleteDoc(doc(db, 'servers', selectedServer.id, 'channels', channelDoc.id));
+                                console.log(`  Deleted channel: ${channelDoc.id} (${channelDoc.data().name})`);
+                            } catch (channelDeleteError) {
+                                console.error(`Error deleting channel ${channelDoc.id}:`, channelDeleteError);
+                                // Continue trying to delete other channels/server, but log the error
+                            }
+                        }
+                        // Finally, delete the server document itself
+                        await deleteDoc(doc(db, 'servers', selectedServer.id));
+                        console.log(`Server ${selectedServer.name} (${selectedServer.id}) deleted successfully.`);
+
+                        selectedServer = null;
+                        showDmListView(); // Go back to DM list view
+                        showMessage(mainContentHeader ? mainContentHeader.parentElement : null, 'Server deleted successfully!', false);
+
+                        // IMPORTANT: Remind user to check Firestore Security Rules if still failing
+                        console.warn("If server deletion still fails, ensure your Firestore Security Rules allow recursive deletion by the owner for '/servers/{serverId}', '/servers/{serverId}/channels/{channelId}', and '/servers/{serverId}/channels/{channelId}/messages/{messageId}'.");
+
+
+                    } catch (error) {
+                        console.error("Overall error deleting server:", error);
+                        showMessage(adminMessage, 'Failed to delete server. Check console for details and ensure Firestore Security Rules permit recursive deletion.', true);
+                    }
+                });
+            });
+        }
+
+
+        // --- Admin Management ---
+        if (addAdminBtn) { // Add null check
+            addAdminBtn.addEventListener('click', async () => {
+                const adminUsername = addAdminUsernameInput ? addAdminUsernameInput.value.trim() : '';
+                if (adminMessage) adminMessage.classList.add('hidden');
+                if (!adminUsername || !selectedServer || !currentUserId || !isOwner()) {
+                    showMessage(adminMessage, "Only the server owner can add admins. Enter a username.", true);
+                    return;
+                }
+                if (adminUsername === currentUsername) {
+                    showMessage(adminMessage, "You are already the owner.", true);
+                    return;
+                }
+
+                try {
+                    const usersRef = collection(db, 'users');
+                    const q = query(usersRef, where('username', '==', adminUsername));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) { showMessage(adminMessage, `User '${adminUsername}' not found.`, true); return; }
+                    const targetUserId = querySnapshot.docs[0].id;
+
+                    if (selectedServer.admins.includes(targetUserId)) {
+                        showMessage(adminMessage, `${adminUsername} is already an admin.`, false);
+                        if (addAdminUsernameInput) addAdminUsernameInput.value = '';
+                        return;
+                    }
+                    if (targetUserId === selectedServer.ownerId) {
+                        showMessage(adminMessage, `${adminUsername} is the owner and cannot be added as a separate admin.`, true);
+                        if (addAdminUsernameInput) addAdminUsernameInput.value = '';
+                        return;
+                    }
+                    await updateDoc(doc(db, 'servers', selectedServer.id), { admins: arrayUnion(targetUserId) });
+                    showMessage(adminMessage, `${adminUsername} added as admin!`, false);
+                    if (addAdminUsernameInput) addAdminUsernameInput.value = '';
+                } catch (error) {
+                    console.error("Error adding admin:", error);
+                    showMessage(adminMessage, 'Failed to add admin. Check console.', true);
+                }
+            });
+        }
+
+
+        if (settingsAdminList) { // Add null check around delegate listener
+            settingsAdminList.addEventListener('click', async (event) => {
+                if (event.target.classList.contains('remove-admin-btn')) {
+                    const adminIdToRemove = event.target.dataset.adminId;
+                    if (!selectedServer || !currentUserId || !isOwner() || adminIdToRemove === currentUserId) {
+                        showMessage(adminMessage, "Only the owner can remove admins, and you cannot remove yourself.", true);
+                        return;
+                    }
+                    showCustomConfirm('Are you sure you want to remove this admin?', async () => {
+                        try {
+                            await updateDoc(doc(db, 'servers', selectedServer.id), { admins: arrayRemove(adminIdToRemove) });
+                            showMessage(adminMessage, 'Admin removed!', false);
+                        } catch (error) {
+                            console.error("Error removing admin:", error);
+                            showMessage(adminMessage, 'Failed to remove admin. Check console.', true);
+                        }
+                    });
+                }
+            });
+        }
+
+
+        // --- Channel Management ---
+
+        let channels = []; // Store fetched channels for the current server
+
+        function fetchChannelsForServer(serverId) {
+            if (!currentUserId || !serverId) {
+                console.warn('Cannot fetch channels: User or server not identified.');
+                return;
+            }
+            if (unsubscribeChannels) {
+                unsubscribeChannels();
+            }
+            if (leftPanelContent) leftPanelContent.innerHTML = ''; // Clear existing channel list
+            const channelsCollectionRef = collection(db, 'servers', serverId, 'channels');
+            const q = query(channelsCollectionRef, orderBy('createdAt', 'asc'));
+
+            unsubscribeChannels = onSnapshot(q, (snapshot) => {
+                if (leftPanelContent) leftPanelContent.innerHTML = '';
+                channels = []; // Clear channels array
+                if (!snapshot.empty) {
+                    const textChannelsHeader = document.createElement('p');
+                    textChannelsHeader.className = 'text-gray-400 text-sm font-semibold mb-2';
+                    textChannelsHeader.textContent = 'Text Channels';
+                    if (leftPanelContent) leftPanelContent.appendChild(textChannelsHeader);
+
+                    snapshot.docs.forEach(doc => {
+                        const channel = { id: doc.id, ...doc.data() };
+                        channels.push(channel); // Add to local channels array
+                        const channelDiv = document.createElement('div');
+                        channelDiv.id = `channel-${channel.id}`;
+                        channelDiv.className = `channel-item ${selectedChannel && selectedChannel.id === channel.id ? 'active' : 'bg-gray-700 hover:bg-gray-600'} text-gray-200`;
+                        channelDiv.textContent = `# ${channel.name}`;
+                        channelDiv.addEventListener('click', () => selectChannel(channel));
+                        if (leftPanelContent) leftPanelContent.appendChild(channelDiv);
+                    });
+
+                    // Select the first channel by default if none is selected
+                    if (!selectedChannel && channels.length > 0) {
+                        selectChannel(channels[0]);
+                    } else if (selectedChannel && !channels.some(c => c.id === selectedChannel.id)) {
+                        // If selected channel was deleted, select first available
+                        if (channels.length > 0) {
+                            selectChannel(channels[0]);
+                        } else {
+                            selectedChannel = null;
+                            if (messagesListEl) messagesListEl.innerHTML = '';
+                            if (mainContentHeader) mainContentHeader.textContent = `# No Channels`;
+                            if (unsubscribeMessages) unsubscribeMessages();
+                        }
+                    }
+                } else {
+                    if (mainContentHeader) mainContentHeader.textContent = `# No Channels`;
+                    if (messagesListEl) messagesListEl.innerHTML = 'No channels in this server yet. Add one from settings!';
+                    if (unsubscribeMessages) unsubscribeMessages();
+                }
+            }, (error) => {
+                console.error("Error fetching channels:", error);
+            });
+        }
+
+        function selectChannel(channel) {
+            if (selectedChannel && selectedChannel.id === channel.id) return;
+            selectedChannel = channel;
+            console.log(`Selected channel: ${channel.name} (ID: ${channel.id})`);
+
+            // Update active state in UI
+            document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active', 'bg-blue-600', 'text-white', 'font-semibold'));
+            const activeChannelDiv = document.getElementById(`channel-${channel.id}`);
+            if (activeChannelDiv) {
+                activeChannelDiv.classList.add('active', 'bg-blue-600', 'text-white', 'font-semibold');
+                activeChannelDiv.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+            }
+
+            if (mainContentHeader) mainContentHeader.textContent = `# ${channel.name}`;
+            fetchMessages(selectedServer.id, 'channel', channel.id); // Call the unified fetchMessages
+        }
+
+        if (addChannelBtn) { // Add null check
+            addChannelBtn.addEventListener('click', async () => {
+                const channelName = newChannelNameInput ? newChannelNameInput.value.trim() : '';
+                if (channelMessage) channelMessage.classList.add('hidden');
+
+                if (!selectedServer || !currentUserId) {
+                    showMessage(channelMessage, "You must be logged in and a server selected to add channels.", true);
+                    return;
+                }
+                if (!hasManagementPermissions()) {
+                    showMessage(channelMessage, "Only the server owner or admins can add channels.", true);
+                    return;
+                }
+                if (!channelName) {
+                    showMessage(channelMessage, "Channel name cannot be empty.", true);
+                    return;
+                }
+
+                try {
+                    const channelsCollectionRef = collection(db, 'servers', selectedServer.id, 'channels');
+                    // Check if channel name already exists
+                    const q = query(channelsCollectionRef, where('name', '==', channelName));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        showMessage(channelMessage, `Channel '#${channelName}' already exists.`, true);
+                        return;
+                    }
+
+                    await addDoc(channelsCollectionRef, {
+                        name: channelName,
+                        type: 'text', // Default to text channel
+                        canTalk: true, // Default: everyone can talk
+                        createdAt: serverTimestamp()
+                    });
+                    showMessage(channelMessage, `Channel '#${channelName}' created!`, false);
+                    if (newChannelNameInput) newChannelNameInput.value = '';
+                    showServerSettingsView(selectedServer); // Refresh settings view
+                } catch (error) {
+                    console.error("Error adding channel:", error);
+                    showMessage(channelMessage, 'Failed to add channel. Check console.', true);
+                }
+            });
+        }
+
+
+        // Event listener for opening channel settings modal (delegated to settingsChannelList)
+        if (settingsChannelList) { // Add null check around delegate listener
+            settingsChannelList.addEventListener('click', async (event) => {
+                if (event.target.classList.contains('edit-channel-btn')) {
+                    const channelId = event.target.dataset.channelId;
+                    if (!selectedServer || !hasManagementPermissions()) {
+                        showMessage(channelSettingsMessage, "Only owner/admins can edit channel settings.", true); // Use specific modal message
+                        return;
+                    }
+                    try {
+                        const channelDocSnap = await getDoc(doc(db, 'servers', selectedServer.id, 'channels', channelId));
+                        if (channelDocSnap.exists()) {
+                            const channelData = channelDocSnap.data();
+                            editingChannelId = channelId;
+                            if (editChannelNameInput) editChannelNameInput.value = channelData.name;
+                            if (canTalkEveryoneCheckbox) canTalkEveryoneCheckbox.checked = channelData.canTalk;
+                            if (channelSettingsMessage) channelSettingsMessage.classList.add('hidden'); // Clear previous messages
+                            if (channelSettingsModal) channelSettingsModal.classList.remove('hidden');
+                        } else {
+                            showMessage(channelSettingsMessage, "Channel not found.", true);
+                        }
+                    } catch (error) {
+                        console.error("Error fetching channel for edit:", error);
+                        showMessage(channelSettingsMessage, "Failed to load channel settings.", true);
+                    }
+                }
+            });
+        }
+
+
+        if (cancelChannelSettingsBtn) { // Add null check
+            cancelChannelSettingsBtn.addEventListener('click', () => {
+                if (channelSettingsModal) channelSettingsModal.classList.add('hidden');
+                editingChannelId = null;
+            });
+        }
+
+
+        if (saveChannelSettingsBtn) { // Add null check
+            saveChannelSettingsBtn.addEventListener('click', async () => {
+                if (!editingChannelId || !selectedServer || !hasManagementPermissions()) {
+                    showMessage(channelSettingsMessage, "Error: No channel selected or insufficient permissions.", true);
+                    return;
+                }
+                const newChannelName = editChannelNameInput ? editChannelNameInput.value.trim() : '';
+                const newCanTalk = canTalkEveryoneCheckbox ? canTalkEveryoneCheckbox.checked : false;
+
+                if (!newChannelName) {
+                    showMessage(channelSettingsMessage, "Channel name cannot be empty.", true);
+                    return;
+                }
+                try {
+                    const channelDocRef = doc(db, 'servers', selectedServer.id, 'channels', editingChannelId);
+                    await updateDoc(channelDocRef, {
+                        name: newChannelName,
+                        canTalk: newCanTalk
+                    });
+                    showMessage(channelSettingsMessage, "Channel settings saved!", false);
+                    if (channelSettingsModal) channelSettingsModal.classList.add('hidden');
+                    editingChannelId = null;
+                    showServerSettingsView(selectedServer); // Refresh server settings view
+                    // Re-select current channel if it was the one being edited
+                    if (selectedChannel && selectedChannel.id === editingChannelId) {
+                        selectChannel({ ...selectedChannel, name: newChannelName, canTalk: newCanTalk });
+                    }
+                } catch (error) {
+                    console.error("Error saving channel settings:", error);
+                    showMessage(channelSettingsMessage, "Failed to save channel settings. Check console.", true);
+                }
+            });
+        }
+
+
+        if (deleteChannelBtn) { // Add null check
+            deleteChannelBtn.addEventListener('click', () => {
+                if (!editingChannelId || !selectedServer || !hasManagementPermissions()) {
+                    showMessage(channelSettingsMessage, "Error: No channel selected or insufficient permissions.", true);
+                    return;
+                }
+                showCustomConfirm(`Are you sure you want to delete this channel? All messages will be lost.`, async () => {
+                    try {
+                        // Delete all messages in the channel first
+                        const messagesQuery = query(collection(db, 'servers', selectedServer.id, 'channels', editingChannelId, 'messages'));
+                        const messagesSnapshot = await getDocs(messagesQuery);
+                        for (const messageDoc of messagesSnapshot.docs) {
+                            await deleteDoc(doc(db, 'servers', selectedServer.id, 'channels', editingChannelId, 'messages', messageDoc.id));
+                        }
+                        // Then delete the channel document itself
+                        await deleteDoc(doc(db, 'servers', selectedServer.id, 'channels', editingChannelId));
+
+                        showMessage(channelSettingsMessage, "Channel deleted!", false);
+                        if (channelSettingsModal) channelSettingsModal.classList.add('hidden');
+                        editingChannelId = null;
+
+                        // If the deleted channel was the active one, clear selectedChannel
+                        if (selectedChannel && selectedChannel.id === editingChannelId) {
+                            selectedChannel = null;
+                        }
+                        // Refresh server settings which will also re-fetch channels and handle selection
+                        showServerSettingsView(selectedServer);
+                    } catch (error) {
+                        console.error("Error deleting channel:", error);
+                        showMessage(channelSettingsMessage, "Failed to delete channel. Check console.", true);
+                    }
+                });
+            });
+        }
+
+
+        // --- Friend System & DMs ---
+
+        // Fetches and displays friends and incoming friend requests in the provided container
+        async function fetchFriends(containerElement) {
+            if (!currentUserId) { console.warn('Cannot fetch friends: User not authenticated.'); return; }
+            if (unsubscribeFriends) { unsubscribeFriends(); }
+
+            const activeFriendsListEl = containerElement ? containerElement.querySelector('#friends-list') : null;
+            if (!activeFriendsListEl) { console.error('Friends list element not found in provided container.'); return; }
+            activeFriendsListEl.innerHTML = '';
+
+            const friendRequestsRef = collection(db, 'users', currentUserId, 'friendRequests');
+            const qRequests = query(friendRequestsRef, where('status', '==', 'pending'));
+
+            unsubscribeFriends = onSnapshot(qRequests, async (snapshot) => {
+                if (activeFriendsListEl) activeFriendsListEl.innerHTML = ''; // Clear again to re-render everything if snapshot updates
+                if (!snapshot.empty) {
+                    const requestsHeader = document.createElement('h4');
+                    requestsHeader.className = 'text-gray-400 text-sm font-semibold mb-2';
+                    requestsHeader.textContent = 'Incoming Requests:';
+                    if (activeFriendsListEl) activeFriendsListEl.appendChild(requestsHeader);
+
+                    for (const reqDoc of snapshot.docs) {
+                        const request = reqDoc.data();
+                        const senderProfileSnap = await getDoc(doc(db, 'users', request.senderId));
+                        if (senderProfileSnap.exists()) {
+                            const senderUsername = senderProfileSnap.data().username;
+                            const requestDiv = document.createElement('div');
+                            requestDiv.className = 'p-2 mb-1 bg-gray-700 rounded-md flex justify-between items-center';
+                            requestDiv.innerHTML = `
+                                <span>${senderUsername}</span>
+                                <div>
+                                    <button class="accept-friend-btn bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-1 rounded-full mr-1" data-sender-id="${request.senderId}" data-request-id="${reqDoc.id}">Accept</button>
+                                    <button class="decline-friend-btn bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded-full" data-request-id="${reqDoc.id}">Decline</button>
+                                </div>
+                            `;
+                            if (activeFriendsListEl) activeFriendsListEl.appendChild(requestDiv);
+                        }
+                    }
+                }
+
+                const userProfileSnap = await getDoc(doc(db, 'users', currentUserId));
+                if (userProfileSnap.exists()) {
+                    const userData = userProfileSnap.data();
+                    if (userData.friends && userData.friends.length > 0) {
+                        const friendsHeader = document.createElement('h4');
+                        friendsHeader.className = 'text-gray-400 text-sm font-semibold mt-4 mb-2';
+                        friendsHeader.textContent = 'My Friends:';
+                        if (activeFriendsListEl) activeFriendsListEl.appendChild(friendsHeader);
+
+                        for (const friendId of userData.friends) {
+                            const friendProfileSnap = await getDoc(doc(db, 'users', friendId));
+                            if (friendProfileSnap.exists()) {
+                                const friendUsername = friendProfileSnap.data().username;
+                                const friendDiv = document.createElement('div');
+                                friendDiv.className = `p-2 mb-1 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600 dm-friend-item
+                                                       ${selectedDM && selectedDM.id === friendId ? 'active bg-blue-700' : ''}`; // Add active class
+                                friendDiv.textContent = friendUsername;
+                                friendDiv.dataset.friendId = friendId;
+                                friendDiv.dataset.friendName = friendUsername;
+                                if (activeFriendsListEl) activeFriendsListEl.appendChild(friendDiv);
+                            }
+                        }
+                    }
+                }
+            }, (error) => {
+                console.error("Error fetching friends/requests:", error);
+            });
+        }
+
+        function selectDm(friendId, friendName) {
+            console.log(`Opening DM with: ${friendName} (ID: ${friendId})`);
+            showDmChatView(friendId, friendName);
+        }
+
+        // Unified function to fetch messages for both channels and DMs
+        function fetchMessages(parentId, messageType, messageContextId) {
+            if (!currentUserId || !parentId || !messageType || !messageContextId) {
+                console.warn('Cannot fetch messages: Missing required parameters.', { currentUserId, parentId, messageType, messageContextId });
+                return;
+            }
+            if (unsubscribeMessages) {
+                unsubscribeMessages();
+            }
+            if (messagesListEl) messagesListEl.innerHTML = ''; // Clear existing messages
+
+            let messagesCollectionRef;
+            if (messageType === 'channel') {
+                // parentId is server.id, messageContextId is channel.id
+                messagesCollectionRef = collection(db, 'servers', parentId, 'channels', messageContextId, 'messages');
+            } else if (messageType === 'dm') {
+                // parentId is currentUserId, messageContextId is targetUserId
+                const conversationId = getDmConversationId(parentId, messageContextId);
+                messagesCollectionRef = collection(db, 'dms', conversationId, 'messages');
+            } else {
+                console.error("Invalid messageType provided to fetchMessages:", messageType);
+                return;
+            }
+
+            const q = query(messagesCollectionRef, orderBy('createdAt', 'asc'));
+
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                if (messagesListEl) messagesListEl.innerHTML = ''; // Clear before rendering new batch
+                snapshot.docs.forEach((doc) => {
+                    const message = doc.data();
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'mb-3 p-3 bg-gray-800 rounded-lg shadow-sm';
+                    messageDiv.innerHTML = `
+                        <div class="flex items-baseline mb-1">
+                            <span class="font-semibold text-blue-400 mr-2">${message.senderUsername || 'Unknown'}</span>
+                            <span class="text-xs text-gray-500">${formatTimestamp(message.createdAt)}</span>
+                        </div>
+                        <p class="text-gray-200">${message.text}</p>
+                    `;
+                    if (messagesListEl) messagesListEl.appendChild(messageDiv);
+                });
+                scrollToBottom();
+            }, (error) => {
+                console.error("Error fetching messages:", error);
+            });
+        }
+
+        // Sends a new message (either server or DM)
+        if (messageForm) { // Add null check
+            messageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const messageText = messageInput ? messageInput.value.trim() : '';
+                if (messageSendError) messageSendError.classList.add('hidden'); // Hide previous errors
+
+                if (!messageText) { return; }
+                if (!currentUserId) { console.warn("Cannot send message: User not logged in."); return; }
+
+                try {
+                    let targetCollectionRef;
+                    let canSendMessage = true;
+
+                    if (currentView === 'server-chat' && selectedServer && selectedChannel) {
+                        targetCollectionRef = collection(db, 'servers', selectedServer.id, 'channels', selectedChannel.id, 'messages');
+
+                        // Check talk permissions for the selected channel
+                        if (selectedChannel.canTalk === false) { // If 'canTalk' is explicitly false
+                            if (!isOwner() && !isAdmin()) {
+                                canSendMessage = false;
+                                showMessage(messageSendError, "You do not have permission to talk in this channel.", true);
+                            }
+                        }
+                    } else if (currentView === 'dm-chat' && selectedDM) {
+                        const conversationId = getDmConversationId(currentUserId, selectedDM.id);
+                        targetCollectionRef = collection(db, 'dms', conversationId, 'messages');
+                    } else {
+                        console.warn("Cannot send message: No valid chat context (server/channel or DM) selected.");
+                        showMessage(messageSendError, "Please select a server channel or direct message to chat.", true);
+                        return;
+                    }
+
+                    if (canSendMessage) {
+                        await addDoc(targetCollectionRef, {
+                            text: messageText,
+                            createdAt: serverTimestamp(),
+                            senderId: currentUserId,
+                            senderUsername: currentUsername
+                        });
+                        if (messageInput) messageInput.value = ''; // Corrected from .input to .value
+                        scrollToBottom();
+                    }
+                } catch (error) {
+                    console.error("Error sending message:", error);
+                    showMessage(messageSendError, 'Failed to send message. Check console.', true);
+                }
+            });
+        }
+
+
+        // --- Initial Load ---
+        // onAuthStateChanged will automatically trigger authentication check on load
+    </script>
+</body>
+</html>
